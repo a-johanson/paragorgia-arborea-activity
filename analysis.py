@@ -36,6 +36,7 @@ with open(pathPrefix+"multivariate_products.pkl", "rb") as fp:
 #	print(p["name"])
 
 
+### Apply PCA to multivariate series
 
 def writeCSV(fileName, data, timeIndex, colNames, dateOffset=np.datetime64("2012-06-01T00:00:01Z")):
 	timestamps = (timeIndex - dateOffset) / np.timedelta64(1, "s")
@@ -88,6 +89,8 @@ for key in multivariate_pca:
 	p = multivariate_pca[key]
 	n_multivariatePCA += p["pcaData"].shape[1]
 
+
+### Extract labels (y) and features (X)
 
 y = openess.values[:].astype(int)
 X = np.empty((openess.index.shape[0], n_univariate+n_multivariatePCA))
@@ -389,7 +392,7 @@ fig.savefig("figures/predictions.pdf", bbox_inches="tight")
 plt.close(fig)
 
 
-### Create models with 1,...,n features and average their properties 
+### Create models with 1,...,n features and average their properties (Monte Carlo cross-validation)
 
 accuracies = []
 likelihoods = []
@@ -416,7 +419,7 @@ for nFeatures in nFeaturesToTry:
 	likelihoods.append(avgLikelihood)
 	featureTable[:,1] /= featureTable[:,0]
 	featureTable[:,2] /= featureTable[:,0]
-	featureTable[:,3] /= featureTable[:,0] 
+	featureTable[:,3] /= featureTable[:,0]
 	print("Feature selection table for {} features and {} iterations:".format(nFeatures, nIterations))
 	print("Feature | % Chosen | Avg. Intercept | Avg. Coef. | Avg. Abs. Coef. | Odd Increase p. Unit Feature De-/Increase")
 	for i, feature in enumerate(featureNames):
