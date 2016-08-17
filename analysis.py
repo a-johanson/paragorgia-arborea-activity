@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+from scipy.stats import ttest_1samp
 from sklearn import decomposition, preprocessing, cross_validation, linear_model, feature_selection, metrics
 import math
 import pickle
@@ -432,9 +433,12 @@ for index, (acc, likel) in enumerate(zip(accuracies, likelihoods)):
 
 ### Average properties of 1-feature models for every feature
 
+expectedMean_H0 = sum(y==1)/y.size
+
 print("All possible 1D Model with {} iterations each:".format(nIterations))
-print("Feature | Avg. Accuracy | Avg. Intercept | Avg. Coef. | Avg. Abs. Coef. | Avg. Odd Increase")
+print("Feature | Avg. Accuracy | Avg. Intercept | Avg. Coef. | Avg. Abs. Coef. | Avg. Odd Increase | p value | significant?")
 for f in featureNames:
+	accuracies1F = np.empty(nIterations)
 	avgAccuracy = 0.0
 	avgIntercept = 0.0
 	avgCoef = 0.0
@@ -442,9 +446,13 @@ for f in featureNames:
 	for i in range(nIterations):
 		metr, interc, coef, selFeatures, ignoreMean, ignoreScale = trainModel(X, y, featureNames, features2Select=[f], seedXVal=seedOffset+i, seedLR=seedOffset+nIterations+i)
 		acc = metr["accuracy"]
+		accuracies1F[i] = acc
 		avgAccuracy += acc/nIterations
 		avgIntercept += interc/nIterations
 		avgCoef += coef[0]/nIterations
 		avgAbsCoef += math.fabs(coef[0])/nIterations
-	print("{:<32}{:>10.3%}{:>10.5F}{:>10.5F}{:>10.5F}{:>+8.1F}%".format(f, avgAccuracy, avgIntercept, avgCoef, avgAbsCoef, 100*math.exp(math.fabs(avgCoef))-100))
+	(t_statistic, p_value) = ttest_1samp(accuracies1F, expectedMean_H0)
+	alpha = 0.95
+	isSignificant = p_value < 1.0-alpha and avgAccuracy > expectedMean_H0
+	print("{:<32}{:>10.3%}{:>10.5F}{:>10.5F}{:>10.5F}{:>+8.1F}%{:>10.5F}  {}".format(f, avgAccuracy, avgIntercept, avgCoef, avgAbsCoef, 100*math.exp(math.fabs(avgCoef))-100, p_value, isSignificant))
 
